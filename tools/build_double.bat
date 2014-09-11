@@ -5,6 +5,29 @@ if "%1" equ "" (
     echo e.g. build_double.bat 0.10.28
     exit /b -1
 )
+if not "%1" == "0.10.28" (
+	echo "only node version 0.10.28 is supported"
+	exit /b -1
+)
+
+REM ==================== for building node locally
+REM if not exist ..\node\node.sln  (	
+REM 	echo "%SELF%"
+REM 	echo "Edge requires node at the same parent directory"
+REM 	exit /b -1
+REM )
+
+REM if exist "%SELF%\build\node-%1" (
+REM 	rmdir "%SELF%\build\node-%1" /s /q
+REM )
+
+REM mkdir "%SELF%\build\node-%1"
+REM xcopy /s /y ..\node\*.* "%SELF%\build\node-%1"
+REM ====================
+
+if exist "%SELF%\build\nuget" ( rmdir "%SELF%\build\nuget" /s /q )
+if exist "%SELF%\build\node-%1-x86" ( rmdir "%SELF%\build\node-%1-x86" /s /q )
+if exist "%SELF%\build\node-%1-x64" ( rmdir "%SELF%\build\node-%1-x64" /s /q )
 
 mkdir "%SELF%\build\nuget\content\edge" > nul 2>&1
 mkdir "%SELF%\build\nuget\lib" > nul 2>&1
@@ -15,7 +38,7 @@ if not exist "%SELF%\build\download.exe" (
 )
 
 if not exist "%SELF%\build\unzip.exe" (
-	csc /out:"%SELF%\build\unzip.exe" /r:System.IO.Compression.FileSystem.dll "%SELF%\unzip.cs"
+ 	csc /out:"%SELF%\build\unzip.exe" /r:System.IO.Compression.FileSystem.dll "%SELF%\unzip.cs"
 )
 
 if not exist "%SELF%\build\repl.exe" (
@@ -27,11 +50,13 @@ if not exist "%SELF%\build\nuget.exe" (
 )
 
 if not exist "%SELF%\build\%1.zip" (
-	"%SELF%\build\download.exe" https://github.com/joyent/node/archive/v%1.zip "%SELF%\build\%1.zip"
+	REM "%SELF%\build\download.exe" https://github.com/joyent/node/archive/v%1.zip "%SELF%\build\%1.zip"
+	"%SELF%\build\download.exe" "https://github.com/ioninteractive/node/archive/develop.zip" "%SELF%\build\%1.zip"
 )
 
 if not exist "%SELF%\build\node-%1" (
 	"%SELF%\build\unzip.exe" "%SELF%\build\%1.zip" "%SELF%\build"
+	move "%SELF%\build\node-develop" "%SELF%\build\node-%1"
 )
 
 call :build_node %1 x86
@@ -39,20 +64,22 @@ if %ERRORLEVEL% neq 0 exit /b -1
 call :build_node %1 x64
 if %ERRORLEVEL% neq 0 exit /b -1
 
-if not exist "%SELF%\build\node-%1-x86\node.exe" (
+REM if not exist "%SELF%\build\node-%1-x86\node.exe" (
 	"%SELF%\build\download.exe" http://nodejs.org/dist/v%1/node.exe "%SELF%\build\node-%1-x86\node.exe"
-)
+REM )
 
-if not exist "%SELF%\build\node-%1-x64\node.exe" (
+REM if not exist "%SELF%\build\node-%1-x64\node.exe" (
 	"%SELF%\build\download.exe" http://nodejs.org/dist/v%1/x64/node.exe "%SELF%\build\node-%1-x64\node.exe"
-)
+REM )
 
 call :build_edge %1 x86
 if %ERRORLEVEL% neq 0 exit /b -1
 call :build_edge %1 x64
 if %ERRORLEVEL% neq 0 exit /b -1
 
-csc /out:"%SELF%\build\nuget\lib\EdgeJs.dll" /target:library "%SELF%\..\src\double\dotnet\EdgeJs.cs"
+csc /out:"%SELF%\build\nuget\lib\EdgeJs.dll" /target:library "%SELF%\..\src\double\dotnet\EdgeJs.cs" 
+REM /debug:full
+
 if %ERRORLEVEL% neq 0 exit /b -1
 
 copy /y "%SELF%\..\lib\edge.js" "%SELF%\build\nuget\content\edge"
@@ -99,7 +126,7 @@ exit /b 0
 
 rem takes 2 parameters: 1 - node version, 2 - x86 or x64
 
-if exist "%SELF%\build\node-%1-%2" exit /b 0
+REM if exist "%SELF%\build\node-%1-%2" exit /b 0
 
 pushd "%SELF%\build\node-%1"
 
